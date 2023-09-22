@@ -1,4 +1,4 @@
-# Logistic Regression on Iris Dataset
+# Logistic Regression from Scratch
 
 Proyek ini adalah implementasi dari algoritma Regresi Logistik pada dataset Iris.
 
