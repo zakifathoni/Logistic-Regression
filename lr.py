@@ -11,16 +11,17 @@ dataset = pd.read_csv(url, names=names)
 dataset['class'] = pd.Categorical(dataset['class'])
 dataset['class'] = dataset['class'].cat.codes
 
-# Definisikan fungsi logistic regression
-def logistic_regression(X, y, num_steps, learning_rate):
+# Define the logistic regression function
+def logistic_regression(X, y, num_steps, learning_rate, regularization_rate):
     """
-    Melakukan logistic regression menggunakan gradient descent.
+    Melakukan logistic regression menggunakan gradient descent dengan L2 regularization.
 
     Args:
         X (numpy.ndarray): Fitur input dengan bentuk (n_samples, n_features).
         y (numpy.ndarray): Nilai target dengan bentuk (n_samples,).
         num_steps (int): Jumlah langkah yang akan dilakukan dalam algoritma gradient descent.
         learning_rate (float): Tingkat pembelajaran untuk algoritma gradient descent.
+        regularization_rate (float): Tingkat regulasi L2.
 
     Returns:
         numpy.ndarray: Bobot yang dioptimalkan dengan bentuk (n_features,).
@@ -41,7 +42,7 @@ def logistic_regression(X, y, num_steps, learning_rate):
 
         output_error_signal = y - predictions
         gradient = np.dot(X.T, output_error_signal)
-        weights += learning_rate * gradient
+        weights += learning_rate * (gradient - regularization_rate * weights)
 
     return weights
 
@@ -64,8 +65,8 @@ num_classes = len(np.unique(dataset['class'].values))
 # Terapkan K-Fold Cross Validation
 for i in range(k):
     # Bagi subset menjadi set pelatihan dan set pengujian
-    train = pd.concat(subsets[:i] + subsets[i+1:])
     test = subsets[i]
+    train = pd.concat(subsets[:i] + subsets[i+1:])
 
     X_train = train.iloc[:, :-1].values
     y_train = train.iloc[:, -1].values
@@ -76,7 +77,7 @@ for i in range(k):
     weights_all_classes = []
     for c in range(num_classes):
         binary_y_train = np.where(y_train == c, 1, 0)
-        weights_c = logistic_regression(X_train, binary_y_train, num_steps=300000, learning_rate=5e-5)
+        weights_c = logistic_regression(X_train, binary_y_train, num_steps=10000 , learning_rate=5e-5, regularization_rate=0.01)
         weights_all_classes.append(weights_c)
 
     # Cetak koefisien dan intercept untuk setiap lipatan dan setiap kelas
