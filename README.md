@@ -1,28 +1,69 @@
-# Logistic Regression from Scratch
+# Multiclass Logistic Regression
 
-Proyek ini adalah implementasi dari algoritma Regresi Logistik pada dataset Iris.
+Implementasi multiclass logistic regression menggunakan Python dengan menggunakan metode gradient descent.
 
 ## Deskripsi
 
-Kode ini mengimplementasikan algoritma Regresi Logistik untuk klasifikasi multikelas pada dataset Iris. Kode ini juga menggunakan validasi silang K-Fold untuk evaluasi model.
+Kode ini mengimplementasikan multiclass logistic regression, juga dikenal sebagai multinomial logistic regression atau softmax regression. Multiclass logistic regression digunakan ketika ingin memprediksi lebih dari 2 kelas. Kode ini menjelaskan bagaimana matematika di balik multiclass logistic regression bekerja dan mengimplementasikannya menggunakan metode gradient descent dari awal menggunakan Python.
 
-## Persyaratan
+## Video
 
-- Python 3
-- Numpy
-- Pandas
+Video yang menjelaskan konsep dan implementasi multiclass logistic regression dapat dilihat di [sini](https://youtu.be/wY3PJGZEyY4).
 
-## Cara Menggunakan
+## Problem Statement
 
-1. Pastikan Anda telah menginstal semua persyaratan yang tercantum di atas.
-2. Salin kode dari repositori ini.
-3. Jalankan kode menggunakan Python.
+Dalam kasus ini, diasumsikan terdapat N orang/observasi, setiap orang memiliki M fitur, dan mereka termasuk dalam C kelas. Diberikan:
 
-## Struktur Kode
+- Matriks X berukuran N x M. Xij mewakili orang ke-i dengan fitur ke-j.
+- Vektor Y berukuran N. Yi mewakili orang ke-i yang termasuk dalam kelas ke-k.
 
-Kode ini terdiri dari beberapa bagian:
+Yang tidak diketahui:
 
-1. **Pemuatan Dataset**: Bagian ini memuat dataset Iris dari URL yang diberikan.
-2. **Prapemrosesan Dataset**: Bagian ini melakukan prapemrosesan pada dataset, seperti pengkodean label kelas.
-3. **Fungsi Regresi Logistik**: Bagian ini mendefinisikan fungsi regresi logistik.
-4. **Validasi Silang K-Fold**: Bagian ini menerapkan validasi silang K-Fold pada dataset dan mencetak koefisien dan intersep untuk setiap lipatan dan setiap kelas.
+- Matriks bobot W berukuran M x C. Wjk mewakili bobot untuk fitur ke-j dan kelas ke-k.
+
+Tujuan kita adalah mencari W dan menggunakan W untuk memprediksi keanggotaan kelas dari observasi X yang diberikan.
+
+## Alur Kerja Multiclass Logistic Regression
+
+Jika kita mengetahui X dan W (misalnya kita memberikan nilai awal W semua 0), berikut adalah alur kerja multiclass logistic regression:
+
+1. Hitung perkalian antara X dan W, kita dapatkan Z = -XW.
+2. Hitung softmax untuk setiap baris Zi: Pi = softmax(Zi) = exp(Zi) / ∑Ck=0 exp(Zik). Setiap baris Zi harus merupakan perkalian setiap baris X (yaitu Xi) dan seluruh matriks W. Sekarang setiap baris P harus berjumlah 1.
+3. Ambil argmax untuk setiap baris dan temukan kelas dengan probabilitas tertinggi.
+
+## Likelihood
+
+Dalam kasus ini, kita diberikan Y. Jadi untuk observasi yang diberikan, kita tahu kelas dari observasi ini, yaitu Yi. Fungsi likelihood dari Yi diberikan Xi dan W adalah probabilitas observasi i dan kelas k = Yi, yang merupakan softmax dari Zi,k = Yi. Dan fungsi likelihood dari Y diberikan X dan W adalah perkalian semua observasi. 
+
+## Loss Function / Negative Log-Likelihood
+
+Selanjutnya, kita menghitung fungsi loss. Kita menggunakan fungsi negative log-likelihood dan membaginya dengan ukuran sampel. Fungsi loss ini juga ditambahkan dengan regularisasi L2. 
+
+## Gradient
+
+Perhitungan gradien dilakukan dengan menggunakan rumus yang telah diturunkan. Gradien Wk=Yi terhadap Wk adalah matriks identitas I[Yi=k]. 
+
+## Penggunaan
+
+1. Impor library yang diperlukan.
+2. Definisikan fungsi one_hot_encode untuk mengubah vektor target menjadi matriks one-hot encoded.
+3. Definisikan fungsi softmax untuk menghitung softmax dari matriks Z.
+4. Definisikan fungsi loss untuk menghitung fungsi loss untuk logistic regression.
+5. Definisikan fungsi gradient untuk menghitung gradien untuk logistic regression.
+6. Definisikan fungsi gradient_descent untuk melakukan algoritma gradient descent dengan learning rate dan koefisien regulasi yang tetap.
+7. Definisikan kelas Multiclass untuk melakukan training pada model logistic regression.
+8. Gunakan dataset iris sebagai contoh.
+9. Buat objek model dari kelas Multiclass dan lakukan training dengan menggunakan fit.
+10. Lakukan prediksi pada data baru dengan menggunakan predict.
+11. Cetak hasil prediksi dan periksa keakuratan prediksi.
+
+## Requirements
+
+- numpy
+- pandas
+- scikit-learn
+
+## Cara Menjalankan
+
+1. Pastikan semua library yang diperlukan telah diinstal.
+2. Jalankan kode di lingkungan Python.
