@@ -1,111 +1,150 @@
 import numpy as np
 import pandas as pd
-from math import ceil
+from sklearn.datasets import load_iris
 
-# Load Iris dataset
-url = "https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data"
-names = ['sepal-length', 'sepal-width', 'petal-length', 'petal-width', 'class']
-dataset = pd.read_csv(url, names=names)
-
-# Preprocess the dataset
-dataset['class'] = pd.Categorical(dataset['class'])
-dataset['class'] = dataset['class'].cat.codes
-
-# Define the logistic regression function
-def logistic_regression(X, y, num_steps, learning_rate, regularization_rate):
+def one_hot_encode(Y):
     """
-    Melakukan logistic regression menggunakan gradient descent dengan L2 regularization.
-
-    Args:
-        X (numpy.ndarray): Fitur input dengan bentuk (n_samples, n_features).
-        y (numpy.ndarray): Nilai target dengan bentuk (n_samples,).
-        num_steps (int): Jumlah langkah yang akan dilakukan dalam algoritma gradient descent.
-        learning_rate (float): Tingkat pembelajaran untuk algoritma gradient descent.
-        regularization_rate (float): Tingkat regulasi L2.
-
+    Mengubah vektor target menjadi matriks one-hot encoded.
+    
+    Parameters:
+    - Y: Vektor target dengan bentuk (N,), di mana N adalah jumlah sampel.
+    
     Returns:
-        numpy.ndarray: Bobot yang dioptimalkan dengan bentuk (n_features,).
-
+    - Matriks one-hot encoded dengan bentuk (N, C), di mana C adalah jumlah kelas.
     """
+    unique_labels = np.unique(Y)
+    encoded = np.zeros((Y.shape[0], unique_labels.shape[0]))
+    for i, label in enumerate(unique_labels):
+        encoded[Y == label, i] = 1
+    return encoded
 
-    # Tambahkan kolom intercept ke X
-    intercept = np.ones((X.shape[0], 1))
-    X = np.hstack((intercept, X))
+def softmax(Z):
+    """
+    Menghitung softmax dari matriks Z.
+    
+    Parameters:
+    - Z: Matriks input dengan bentuk (N, C), di mana N adalah jumlah sampel dan C adalah jumlah kelas.
+    
+    Returns:
+    - Matriks softmax dengan bentuk yang sama seperti Z.
+    """
+    exp_Z = np.exp(Z)
+    return exp_Z / np.sum(exp_Z, axis=1, keepdims=True)
 
-    # Inisialisasi bobot dengan nilai nol
-    weights = np.zeros(X.shape[1])
+def loss(X, Y, W):
+    """
+    Menghitung fungsi loss untuk logistic regression.
+    
+    Parameters:
+    - X: Matriks fitur dengan bentuk (N, D), di mana N adalah jumlah sampel dan D adalah jumlah fitur.
+    - Y: Matriks one-hot encoded target dengan bentuk (N, C), di mana N adalah jumlah sampel dan C adalah jumlah kelas.
+    - W: Matriks bobot dengan bentuk (D, C), di mana D adalah jumlah fitur dan C adalah jumlah kelas.
+    
+    Returns:
+    - Nilai loss.
+    """
+    Z = - X @ W
+    N = X.shape[0]
+    return (1 / N * (np.trace(X @ W @ Y.T) + np.sum(np.log(np.sum(np.exp(Z), axis=1)))))
 
-    # Gradient descent
-    for step in range(num_steps):
-        scores = np.dot(X, weights)
-        predictions = 1 / (1 + np.exp(-scores))
+def gradient(X, Y, W, mu):
+    """
+    Menghitung gradien untuk logistic regression.
+    
+    Parameters:
+    - X: Matriks fitur dengan bentuk (N, D), di mana N adalah jumlah sampel dan D adalah jumlah fitur.
+    - Y: Matriks one-hot encoded target dengan bentuk (N, C), di mana N adalah jumlah sampel dan C adalah jumlah kelas.
+    - W: Matriks bobot dengan bentuk (D, C), di mana D adalah jumlah fitur dan C adalah jumlah kelas.
+    - mu: Koefisien regulasi.
+    
+    Returns:
+    - Gradien bobot.
+    """
+    Z = - X @ W
+    P = softmax(Z)
+    N = X.shape[0]
+    return 1 / N * (X.T @ (Y - P)) + 2 * mu * W
 
-        output_error_signal = y - predictions
-        gradient = np.dot(X.T, output_error_signal)
-        weights += learning_rate * (gradient - regularization_rate * weights)
+def gradient_descent(X, Y, max_iter=1000, eta=0.1, mu=0.01):
+    """
+    Algoritma gradient descent sederhana dengan learning rate (eta) dan koefisien regulasi (mu) tetap.
+    
+    Parameters:
+    - X: Matriks fitur dengan bentuk (N, D), di mana N adalah jumlah sampel dan D adalah jumlah fitur.
+    - Y: Matriks target dengan bentuk (N,), di mana N adalah jumlah sampel.
+    - max_iter: Jumlah iterasi maksimum.
+    - eta: Learning rate.
+    - mu: Koefisien regulasi.
+    
+    Returns:
+    - DataFrame yang berisi langkah-langkah iterasi dan nilai loss pada setiap iterasi.
+    - Matriks bobot yang telah diperbarui.
+    """
+    Y_onehot = one_hot_encode(Y)
+    W = np.zeros((X.shape[1], Y_onehot.shape[1]))
+    step = 0
+    step_lst = [] 
+    loss_lst = []
+    W_lst = []
 
-    return weights
+    while step < max_iter:
+        step += 1
+        W -= eta * gradient(X, Y_onehot, W, mu)
+        step_lst.append(step)
+        W_lst.append(W)
+        loss_lst.append(loss(X, Y_onehot, W))
 
-# Set seed untuk generator angka acak
-np.random.seed(0)
+    df = pd.DataFrame({
+        'step': step_lst, 
+        'loss': loss_lst
+    })
+    return df, W
 
-# Tentukan jumlah lipatan (folds)
-k = 5
+class Multiclass:
+    def fit(self, X, Y):
+        """
+        Melakukan training pada model logistic regression.
+        
+        Parameters:
+        - X: Matriks fitur dengan bentuk (N, D), di mana N adalah jumlah sampel dan D adalah jumlah fitur.
+        - Y: Matriks target dengan bentuk (N,), di mana N adalah jumlah sampel.
+        """
+        self.loss_steps, self.W = gradient_descent(X, Y)
 
-# Acak dataset
-dataset = dataset.sample(frac=1).reset_index(drop=True)
+    def loss_plot(self):
+        """
+        Menampilkan plot loss terhadap jumlah iterasi.
+        
+        Returns:
+        - Objek plot.
+        """
+        return self.loss_steps.plot(
+            x='step', 
+            y='loss',
+            xlabel='step',
+            ylabel='loss'
+        )
 
-# Bagi dataset menjadi k subset
-subset_size = ceil(len(dataset) / k)
-subsets = [dataset[i*subset_size:(i+1)*subset_size] for i in range(k)]
+    def predict(self, H):
+        """
+        Melakukan prediksi pada data baru.
+        
+        Parameters:
+        - H: Matriks fitur dengan bentuk (M, D), di mana M adalah jumlah data baru dan D adalah jumlah fitur.
+        
+        Returns:
+        - Array dengan label prediksi.
+        """
+        Z = - H @ self.W
+        P = softmax(Z)
+        return np.argmax(P, axis=1)
 
-# Dapatkan jumlah kelas
-num_classes = len(np.unique(dataset['class'].values))
+X = load_iris().data
+Y = load_iris().target
 
-# Terapkan K-Fold Cross Validation
-for i in range(k):
-    # Bagi subset menjadi set pelatihan dan set pengujian
-    test = subsets[i]
-    train = pd.concat(subsets[:i] + subsets[i+1:])
+model = Multiclass()
+model.fit(X, Y)
 
-    X_train = train.iloc[:, :-1].values
-    y_train = train.iloc[:, -1].values
-    X_test = test.iloc[:, :-1].values
-    y_test = test.iloc[:, -1].values
+print(model.predict(X))
 
-    # Terapkan Logistic Regression untuk setiap kelas (One-vs-all)
-    weights_all_classes = []
-    for c in range(num_classes):
-        binary_y_train = np.where(y_train == c, 1, 0)
-        weights_c = logistic_regression(X_train, binary_y_train, num_steps=10000 , learning_rate=5e-5, regularization_rate=0.01)
-        weights_all_classes.append(weights_c)
-
-    # Cetak koefisien dan intercept untuk setiap lipatan dan setiap kelas
-    print('Lipatan ', i+1)
-    for c in range(num_classes):
-        print('Kelas ', c)
-        print('Koefisien: ', weights_all_classes[c][1:])
-        print('Intercept: ', weights_all_classes[c][0])
-
-    # Prediksi hasil set pengujian untuk setiap kelas dan pilih kelas dengan skor tertinggi
-    final_scores_all_classes = [np.dot(np.hstack((np.ones((X_test.shape[0], 1)), X_test)), weights_c) for weights_c in weights_all_classes]
-    preds = np.argmax(final_scores_all_classes, axis=0)
-
-    print('Jumlah sampel yang salah diklasifikasikan: %d' % (y_test != preds).sum())
-
-    # Evaluasi model: hitung akurasi, presisi, recall, dan f1-score untuk setiap lipatan
-
-    TP = np.sum((y_test == 1) & (preds == 1))
-    TN = np.sum((y_test == 0) & (preds == 0))
-    FP = np.sum((y_test == 0) & (preds == 1))
-    FN = np.sum((y_test == 1) & (preds == 0))
-
-    akurasi = (preds == y_test).mean()
-    presisi = TP / (TP + FP)
-    recall = TP / (TP + FN)
-    f1_score = 2 * presisi * recall / (presisi + recall)
-
-    print('Akurasi: ', akurasi)
-    print('Presisi: ', presisi)
-    print('Recall: ', recall)
-    print('F1 Score: ', f1_score)
+print(model.predict(X) == Y)
