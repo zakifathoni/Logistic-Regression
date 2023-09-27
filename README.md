@@ -6,10 +6,6 @@ Implementasi multiclass logistic regression menggunakan Python dengan menggunaka
 
 Kode ini mengimplementasikan multiclass logistic regression, juga dikenal sebagai multinomial logistic regression atau softmax regression. Multiclass logistic regression digunakan ketika ingin memprediksi lebih dari 2 kelas. Kode ini menjelaskan bagaimana matematika di balik multiclass logistic regression bekerja dan mengimplementasikannya menggunakan metode gradient descent dari awal menggunakan Python.
 
-## Video
-
-Video yang menjelaskan konsep dan implementasi multiclass logistic regression dapat dilihat di [sini](https://youtu.be/wY3PJGZEyY4).
-
 ## Problem Statement
 
 Dalam kasus ini, diasumsikan terdapat N orang/observasi, setiap orang memiliki M fitur, dan mereka termasuk dalam C kelas. Diberikan:
