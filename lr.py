@@ -111,19 +111,6 @@ class Multiclass:
         """
         self.loss_steps, self.W = gradient_descent(X, Y)
 
-    def loss_plot(self):
-        """
-        Menampilkan plot loss terhadap jumlah iterasi.
-        
-        Returns:
-        - Objek plot.
-        """
-        return self.loss_steps.plot(
-            x='step', 
-            y='loss',
-            xlabel='step',
-            ylabel='loss'
-        )
 
     def predict(self, H):
         """
